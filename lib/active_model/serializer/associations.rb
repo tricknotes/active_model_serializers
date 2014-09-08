@@ -132,13 +132,20 @@ module ActiveModel
         end
 
         def serialize_ids
-          ids_key = "#{@name.to_s.singularize}_ids".to_sym
-          if !option(:embed_key) && !source_serializer.respond_to?(@name.to_s) && source_serializer.object.respond_to?(ids_key)
-            source_serializer.object.read_attribute_for_serialization(ids_key)
-          else
-            associated_object.map do |item|
-              item.read_attribute_for_serialization(embed_key)
+          unless option(:embed_key)
+            ids_key = "#{@name.to_s.singularize}_ids"
+
+            if source_serializer.respond_to?(@name.to_s)
+              if relation = source_serializer.__send__(@name.to_s) && relation.respond_to?(:ids)
+                return relation.ids
+              end
+            elsif source_serializer.object.respond_to?(ids_key)
+              return source_serializer.object.__send__(ids_key)
             end
+          end
+
+          associated_object.map do |item|
+            item.read_attribute_for_serialization(embed_key)
           end
         end
       end
